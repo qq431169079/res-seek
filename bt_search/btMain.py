@@ -1,13 +1,12 @@
-# coding: utf-8
+# encoding: utf-8
 
-import socket
 from hashlib import sha1
 from random import randint
 from struct import unpack, pack
 from socket import inet_aton, inet_ntoa
 from bisect import bisect_left
 from threading import Timer
-# from time import sleep
+from time import sleep
 
 from bencode import bencode, bdecode
 
@@ -21,11 +20,13 @@ KRPC_TIMEOUT = 10
 REBORN_TIME = 5 * 60
 K = 8
 
+
 def entropy(bytes):
     s = ""
     for i in range(bytes):
         s += chr(randint(0, 255))
     return s
+
     # """把爬虫"伪装"成正常node, 一个正常的node有ip, port, node ID三个属性, 因为是基于UDP协议,
     # 所以向对方发送信息时, 即使没"明确"说明自己的ip和port时, 对方自然会知道你的ip和port,
     # 反之亦然. 那么我们自身node就只需要生成一个node ID就行, 协议里说到node ID用sha1算法生成,
@@ -34,10 +35,13 @@ def entropy(bytes):
     # ok, 由于sha1总是生成20 byte的值, 所以哪怕你写SHA1(20)或SHA1(19)或SHA1("I am a 2B")都可以,
     # 只要保证大大降低与别人重复几率就行. 注意, node ID非十六进制,
     # 也就是说非FF5C85FE1FDB933503999F9EB2EF59E4B0F51ECA这个样子, 即非hash.hexdigest(). """
+
+
 def random_id():
     hash = sha1()
     hash.update(entropy(20))
     return hash.digest()
+
 
 def decode_nodes(nodes):
     n = []
@@ -51,6 +55,7 @@ def decode_nodes(nodes):
         n.append((nid, ip, port))
     return n
 
+
 def encode_nodes(nodes):
     strings = []
     for node in nodes:
@@ -59,15 +64,19 @@ def encode_nodes(nodes):
 
     return "".join(strings)
 
+
 def intify(hstr):
     # """这是一个小工具, 把一个node ID转换为数字. 后面会频繁用到."""
     return long(hstr.encode('hex'), 16)  # 先转换成16进制, 再变成数字
 
+
 def timer(t, f):
     Timer(t, f).start()
 
+
 class BucketFull(Exception):
     pass
+
 
 class KRPC(object):
     def __init__(self):
@@ -85,9 +94,6 @@ class KRPC(object):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(("0.0.0.0", self.port))
 
-    def find_node_handler(self, msg):
-        pass
-
     def response_received(self, msg, address):
         self.find_node_handler(msg)
 
@@ -103,6 +109,7 @@ class KRPC(object):
         except:
             pass
 
+
 class Client(KRPC):
     def __init__(self, table):
         self.table = table
@@ -112,7 +119,6 @@ class Client(KRPC):
         KRPC.__init__(self)
 
     def find_node(self, address, nid=None):
-        print "find node:", address
         nid = self.get_neighbor(nid) if nid else self.table.nid
         tid = entropy(TID_LENGTH)
 
@@ -162,6 +168,7 @@ class Client(KRPC):
 
     def get_neighbor(self, target):
         return target[:10] + random_id()[10:]
+
 
 class Server(Client):
     def __init__(self, master, table, port):
@@ -243,10 +250,11 @@ class Server(Client):
         except KeyError:
             pass
 
+
 # 该类只实例化一次.
 class KTable(object):
     # 这里的nid就是通过node_id()函数生成的自身node ID. 协议里说道, 每个路由表至少有一个bucket,
-    #  还规定第一个bucket的min=0, max=2^160次方, 所以这里就给予了一个buckets属性来存储bucket, 这个是列表.
+    #    还规定第一个bucket的min=0, max=2^160次方, 所以这里就给予了一个buckets属性来存储bucket, 这个是列表.
     def __init__(self, nid):
         self.nid = nid
         self.buckets = [KBucket(0, 2 ** 160)]
@@ -275,6 +283,7 @@ class KTable(object):
         nodes = []
         if len(self.buckets) == 0: return nodes
         if len(target) != 20: return nodes
+
         index = self.bucket_index(target)
         try:
             nodes = self.buckets[index].nodes
@@ -287,6 +296,7 @@ class KTable(object):
 
                 if max < len(self.buckets):
                     nodes.extend(self.buckets[max].nodes)
+
                 min -= 1
                 max += 1
 
@@ -300,6 +310,7 @@ class KTable(object):
         return bisect_left(self.buckets, intify(target))
 
         # 拆表
+
         # index是待拆分的bucket(old bucket)的所在索引值.
         # 假设这个old bucket的min:0, max:16. 拆分该old bucket的话, 分界点是8, 然后把old bucket的max改为8, min还是0.
         # 创建一个新的bucket, new bucket的min=8, max=16.
@@ -322,6 +333,7 @@ class KTable(object):
         for bucket in self.buckets:
             yield bucket
 
+
 class KBucket(object):
     __slots__ = ("min", "max", "nodes")
 
@@ -338,6 +350,7 @@ class KBucket(object):
         self.nodes = []
 
     # 添加node, 参数node是KNode实例.
+
     # 如果新插入的node的nid属性长度不等于20, 终止.
     # 如果满了, 抛出bucket已满的错误, 终止. 通知上层代码进行拆表.
     # 如果未满, 先看看新插入的node是否已存在, 如果存在, 就替换掉, 不存在, 就添加,
@@ -371,11 +384,12 @@ class KBucket(object):
     def __lt__(self, target):
         return self.max <= target
 
+
 class KNode(object):
     # """
-    #        nid就是node ID的简写, 就不取id这么模糊的变量名了. __init__方法相当于别的OOP语言中的构造方法,
-    #        在python严格来说不是构造方法, 它是初始化, 不过, 功能差不多就行.
-    #        """
+    #       nid就是node ID的简写, 就不取id这么模糊的变量名了. __init__方法相当于别的OOP语言中的构造方法,
+    #       在python严格来说不是构造方法, 它是初始化, 不过, 功能差不多就行.
+    #       """
     __slots__ = ("nid", "ip", "port")
 
     def __init__(self, nid, ip, port):
@@ -386,25 +400,20 @@ class KNode(object):
     def __eq__(self, other):
         return self.nid == other.nid
 
+
 # using example
 class Master(object):
     def __init__(self, f):
         self.f = f
-        self.hashArr = []
 
     def log(self, infohash):
-        nhash = infohash.encode("hex")
-        if nhash not in self.hashArr:
-            self.hashArr.append(nhash)
-            self.f.write(+"\n")
-            self.f.flush()
-
+        self.f.write(infohash.encode("hex") + "\n")
+        self.f.flush()
 
 try:
-    print "start DHT Spider"
-    f = file("hash.txt", "a+")
+    f = open("infohash.log","a")
     m = Master(f)
-    s = Server(Master(f), KTable(random_id()), 6881)
+    s = Server(Master(f), KTable(random_id()), 8001)
     s.start()
 except KeyboardInterrupt:
     s.socket.close()
