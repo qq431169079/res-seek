@@ -25,10 +25,10 @@ import downloadTorrent
 from bencode import bencode,bdecode
 import pygeoip
 
-DB_HOST = ''
-DB_USER = ''
-DB_PASS = ''
-DB_NAME = ''
+DB_HOST = '139.196.121.71'
+DB_USER = 'test'
+DB_PASS = 'test@666.'
+DB_NAME = 'test_soumore'
 
 START_NODES = (
     ("router.bittorrent.com", 6881),

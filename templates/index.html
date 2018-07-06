@@ -1,0 +1,80 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- saved from url=(0067)http://www.17sucai.com/preview/1/2013-04-28/autocomplete/index.html -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>jquery表单制作text文本框autocomplete智能搜索提示框效果</title>
+<meta name="description" content="jquery表单特效制作text文本框搜索提示，在text文本框输入文字内容autocomplete智能搜索提示效果。jquery下载,jquery插件。">
+<link type="text/css" href="./jquery.autocomplete.css" rel="stylesheet">
+<script type="text/javascript" src="./jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="./jquery.autocomplete.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+	
+	function formatItem(row){
+		return " <p>"+row[0] +" </p>"+ " <span>" + row[1] + "个结果</span>";
+	}
+	
+	function formatResult(row){
+		return row[0].replace(/(<.+?>)/gi, '');
+	}
+	
+	function selectItem(li){
+		makeSearchUrl(document.searchform);
+	}
+	
+	$("#keyword").autocomplete("data.html",{
+		delay:10,
+		matchSubset:1,
+		matchContains:1,
+		cacheLength:10,
+		onItemSelect:selectItem,
+		formatItem: formatItem,
+		formatResult: formatResult
+	});
+	
+});
+</script>
+</head>
+<body>
+<script type="text/javascript">
+var makeSearchUrl = function(o){
+	
+	var keys = o.keyword.value;
+	
+	if(keys == "" || keys == "请输入关键字"){
+		alert("请输入关键字");
+		o.keyword.focus();
+		return true;
+	}
+	
+	keys = encodeURIComponent(keys);
+	var url = "/article-search-keyword-"+ keys+".html";
+	window.open(url,'_self');
+	return true;
+	
+}
+</script>
+
+<style type="text/css">
+*{margin:0;padding:0;list-style-type:none;}
+a,img{border:0;}
+.demo{width:720px;margin:30px auto;}
+.demo h2{font-size:16px;color:#3366cc;height:30px;}
+.demo li{float:left;}
+.text,.button{background:url(http://su.bdimg.com/static/superpage/img/spis_031ddf34.png) no-repeat;}
+.text{width:529px;height:22px;padding:4px 7px;padding:6px 7px 2px\9;font:16px arial;border:1px solid #cdcdcd;border-color:#9a9a9a #cdcdcd #cdcdcd #9a9a9a;vertical-align:top;outline:none;margin:0 5px 0 0;}
+.button{width:95px;height:32px;padding:0;padding-top:2px\9;border:0;background-position:0 -35px;background-color:#ddd;cursor:pointer}
+</style>
+
+	<div class="demo">
+		<h2>仿百度首页搜索提示框效果</h2>
+		<form action="http://www.jsfoot.com/e/search/index.php" method="post" name="searchform" id="searchform" class="searchinfo">
+			<ul>
+				<li><input type="text" name="keyword" size="24" maxlength="255" value="" id="keyword" class="text ac_input" autocomplete="off"></li>
+				<li><input type="submit" value="搜索" class="button"></li>
+			</ul>
+		</form>
+	</div>
+	
+
+<div class="ac_results" style="display: none; position: absolute;"></div></body></html>
